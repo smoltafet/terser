@@ -222,6 +222,76 @@ describe("sourcemaps", function() {
         ]);
     });
 
+    describe("enclose", function() {
+        var files = {
+            "unused.js": "function neverUsed() { return 1; }",
+            "used.js": "function used() { return 2; } globalThis.result = used();",
+        };
+
+        it("Should not add a null source for the synthetic enclose wrapper", async function() {
+            var result = await minify(files, {
+                enclose: true,
+                compress: { unused: false },
+                sourceMap: {
+                    includeSources: true,
+                    url: "output.min.js.map",
+                },
+            });
+            var map = JSON.parse(result.map);
+            assert.deepEqual(map.sources, [ "unused.js", "used.js" ]);
+            assert.deepEqual(map.sourcesContent, [
+                files["unused.js"],
+                files["used.js"],
+            ]);
+            assert.ok(!map.sources.includes(null));
+        });
+
+        it("Should keep mappings for the enclosed code", async function() {
+            var result = await minify(files, {
+                enclose: true,
+                compress: { unused: false },
+                sourceMap: {
+                    includeSources: true,
+                    url: "output.min.js.map",
+                },
+            });
+            var map = JSON.parse(result.map);
+            var consumer = await new SourceMapConsumer(map);
+            // every named token of the original files still resolves
+            [ "neverUsed", "used" ].forEach(function(name) {
+                var pos = consumer.generatedPositionFor({
+                    source: name == "used" ? "used.js" : "unused.js",
+                    line: 1,
+                    column: 9,
+                    name: name,
+                });
+                assert.ok(pos.line != null, name);
+            });
+            consumer.destroy();
+        });
+
+        it("Should not add null sources to the decoded map either", async function() {
+            var result = await minify(files, {
+                enclose: true,
+                compress: { unused: false },
+                sourceMap: {
+                    includeSources: true,
+                    asObject: true,
+                },
+            });
+            assert.deepEqual(result.decoded_map.sources, [ "unused.js", "used.js" ]);
+            result.decoded_map.mappings.forEach(function(line) {
+                line.forEach(function(segment) {
+                    if (segment.length > 1) {
+                        // mapped segments reference a real source index
+                        assert.ok(segment[1] >= 0);
+                        assert.ok(segment[1] < result.decoded_map.sources.length);
+                    }
+                });
+            });
+        });
+    });
+
     describe("inSourceMap", function() {
         it("Should read the given string filename correctly when sourceMapIncludeSources is enabled", async function() {
             var result = await minify(read("./test/input/issue-1236/simple.js"), {
