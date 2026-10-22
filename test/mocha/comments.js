@@ -293,6 +293,61 @@ describe("comments", function() {
             assert.strictEqual(ast.print_to_string({comments: "some"}), "/*@preserve*/\n/*@license*/\n//@lic two slashes\n/*@cc_on something*/");
         });
 
+        it("Should preserve a whole run of line comments around @license", async function() {
+            var code = "// @license some text here\n"
+                + "// that continues here\n"
+                + "// @whatever to cause some more havoc\n"
+                + "// bla bla\n"
+                + "console.log(\"hello\");\n"
+                + "// an unrelated comment\n"
+                + "console.log(\"world\");";
+            var result = await minify(code);
+            assert.strictEqual(result.code, "// @license some text here\n"
+                + "// that continues here\n"
+                + "// @whatever to cause some more havoc\n"
+                + "// bla bla\n"
+                + "console.log(\"hello\"),console.log(\"world\");");
+        });
+
+        it("Should preserve line comments before the @license line of a run", async function() {
+            var code = "// MIT License\n"
+                + "// Copyright (c) 2026 Someone\n"
+                + "// @license end of terms\n"
+                + "console.log(1);";
+            var result = await minify(code);
+            assert.strictEqual(result.code, "// MIT License\n"
+                + "// Copyright (c) 2026 Someone\n"
+                + "// @license end of terms\n"
+                + "console.log(1);");
+        });
+
+        it("Should not extend a license run across a blank line", async function() {
+            var code = "// @license first block\n"
+                + "\n"
+                + "// not part of it\n"
+                + "console.log(1);";
+            var result = await minify(code);
+            assert.strictEqual(result.code, "// @license first block\nconsole.log(1);");
+        });
+
+        it("Should not preserve line-comment runs without a license marker", async function() {
+            var code = "// just a comment\n"
+                + "// another one\n"
+                + "console.log(1);";
+            var result = await minify(code);
+            assert.strictEqual(result.code, "console.log(1);");
+        });
+
+        it("Should preserve a trailing license run at end of file", async function() {
+            var code = "console.log(1);\n"
+                + "// @license trailing\n"
+                + "// trailing continuation";
+            var result = await minify(code);
+            assert.strictEqual(result.code, "console.log(1);\n"
+                + "// @license trailing\n"
+                + "// trailing continuation");
+        });
+
         it("Should be able to filter comments by passing a function", async function() {
             var ast = parse("/*TEST 123*/\n//An other comment\n//8 chars.");
             var f = function(node, comment) {
