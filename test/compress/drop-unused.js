@@ -4240,3 +4240,78 @@ issue_t1676_usage_in_concise_method_key: {
     expect: {}
     expect_stdout: true
 }
+
+issue_1639_let_assign_not_duplicated: {
+    options = {
+        evaluate: true,
+        reduce_vars: true,
+        unused: true,
+    }
+    input: {
+        function f() {
+            let x;
+            x = "long string";
+            return `${x}_`;
+        }
+        console.log(f());
+    }
+    expect: {
+        function f() {
+            0;
+            return "long string_";
+        }
+        console.log(f());
+    }
+    expect_stdout: "long string_"
+}
+
+issue_1639_let_assign_twice: {
+    options = {
+        evaluate: true,
+        reduce_vars: true,
+        unused: true,
+    }
+    input: {
+        function f() {
+            let x;
+            x = "a";
+            x = "b";
+            return x;
+        }
+        console.log(f());
+    }
+    expect: {
+        function f() {
+            0;
+            0;
+            return "b";
+        }
+        console.log(f());
+    }
+    expect_stdout: "b"
+}
+
+issue_1639_let_assign_in_condition_kept: {
+    options = {
+        evaluate: true,
+        reduce_vars: true,
+        unused: true,
+    }
+    input: {
+        function f() {
+            let x;
+            if (x = "a") return x;
+            return "b";
+        }
+        console.log(f());
+    }
+    expect: {
+        function f() {
+            let x;
+            if (x = "a") return "a";
+            return "b";
+        }
+        console.log(f());
+    }
+    expect_stdout: "a"
+}
