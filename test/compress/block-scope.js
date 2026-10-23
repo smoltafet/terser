@@ -320,3 +320,78 @@ issue_508: {
         "123456"
     ]
 }
+
+tdz_read_before_let_in_object: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        console.log(! { x });
+        let x = 1;
+    }
+    expect: {
+        console.log(! { x });
+        let x = 1;
+    }
+    expect_stdout: true // ReferenceError: Cannot access 'x' before initialization
+}
+
+tdz_read_before_const_in_array: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        console.log(! [ x ]);
+        const x = 1;
+    }
+    expect: {
+        console.log(! [ x ]);
+        const x = 1;
+    }
+    expect_stdout: true // ReferenceError: Cannot access 'x' before initialization
+}
+
+tdz_read_in_own_initializer: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        let x = ! { x };
+        console.log(x);
+    }
+    expect: {
+        let x = ! { x };
+        console.log(x);
+    }
+    expect_stdout: true // ReferenceError: Cannot access 'x' before initialization
+}
+
+read_after_let_still_folded: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        let x = 1;
+        console.log(! { x });
+    }
+    expect: {
+        let x = 1;
+        console.log(!1);
+    }
+    expect_stdout: "false"
+}
+
+read_of_var_before_decl_unchanged: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        console.log(! { x });
+        var x = 1;
+    }
+    expect: {
+        console.log(!1);
+        var x = 1;
+    }
+    expect_stdout: "false"
+}

@@ -321,3 +321,64 @@ class_static_block_scope_2: {
     }
     expect_stdout: ["PASS", "PASS"]
 }
+
+class_name_tdz_computed_key: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        class x {
+            [ ! { x } ];
+        }
+        new x;
+    }
+    expect: {
+        class x {
+            [ ! { x } ];
+        }
+        new x;
+    }
+    expect_stdout: true // ReferenceError: Cannot access 'x' before initialization
+}
+
+class_name_tdz_computed_key_expression: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        let y = class x {
+            [ ! { x } ];
+        };
+        new y;
+    }
+    expect: {
+        let y = class x {
+            [ ! { x } ];
+        };
+        new y;
+    }
+    expect_stdout: true // ReferenceError: Cannot access 'x' before initialization
+}
+
+class_name_after_init_still_folded: {
+    options = {
+        defaults: true,
+    }
+    input: {
+        class A {
+            m() {
+                return ! { A };
+            }
+        }
+        console.log(new A().m());
+    }
+    expect: {
+        class A {
+            m() {
+                return !1;
+            }
+        }
+        console.log(new A().m());
+    }
+    expect_stdout: "false"
+}
