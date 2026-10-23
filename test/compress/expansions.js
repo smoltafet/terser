@@ -207,3 +207,58 @@ avoid_spread_this: {
 
     expect_stdout: "[ 'PA', 'SS' ]"
 }
+
+array_spread_non_iterable: {
+    input: {
+        [ ...0 ];
+        [ ...null ];
+        [ ...undefined ];
+        [ ...true ];
+        [ ...{} ];
+        [ .../re/ ];
+        [ ...!0 ];
+        [ ...function() {} ];
+    }
+    expect_exact: "[...0];[...null];[...void 0];[...true];[...{}];[.../re/];[...!0];[...function(){}];"
+}
+
+array_spread_non_iterable_mixed: {
+    input: {
+        [ 1, ...0 ];
+        [ ...0, 2 ];
+        [ ...{}, ...0 ];
+    }
+    expect_exact: "[1,...0];[...0,2];[...{},...0];"
+}
+
+array_spread_non_iterable_throws: {
+    input: {
+        console.log("before");
+        [ ...0 ];
+        console.log("after");
+    }
+    expect: {
+        console.log("before");
+        [ ...0 ];
+        console.log("after");
+    }
+    expect_stdout: true // TypeError: 0 is not iterable
+}
+
+call_spread_non_iterable: {
+    input: {
+        Math.max(...0);
+        Math.max(...null);
+        Math.max(...[ 3, 1 ]);
+    }
+    expect_exact: "Math.max(...0);Math.max(...null);Math.max(3,1);"
+}
+
+object_spread_non_iterable_still_dropped: {
+    input: {
+        ({ ...0 });
+        ({ ...null });
+        ({ ...undefined });
+    }
+    expect_exact: "({});({});({});"
+}
